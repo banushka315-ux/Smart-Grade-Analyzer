@@ -48,14 +48,21 @@ export default function FileUpload({ onFileLoaded, isProcessing, onProcessingCha
           throw new Error(errorText || 'Failed to analyze file');
         }
 
-        const analysis = await response.json();
-        if (!analysis || (analysis as any).error) {
+        const analysis: unknown = await response.json();
+        const analysisRecord = analysis && typeof analysis === 'object'
+          ? analysis as Record<string, unknown>
+          : null;
+        if (!analysisRecord || analysisRecord.error) {
           console.error('Invalid analysis response:', analysis);
-          throw new Error((analysis as any).error || 'Invalid response from analysis server');
+          throw new Error(
+            typeof analysisRecord?.error === 'string'
+              ? analysisRecord.error
+              : 'Invalid response from analysis server'
+          );
         }
 
         console.log('Analysis result received', analysis);
-        onFileLoaded(analysis, file.name);
+        onFileLoaded(analysis as AnalysisData, file.name);
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : 'Failed to upload and analyze the file.');
       } finally {
